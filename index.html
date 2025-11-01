@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>BlazePose GHUM × Three.js Skeleton</title>
+        <style>
+            :root {
+                font-family:
+                    system-ui,
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    "Segoe UI",
+                    sans-serif;
+                color-scheme: dark;
+                background-color: #050505;
+                color: #f5f5f5;
+            }
+
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+
+            canvas {
+                display: block;
+                width: 100vw;
+                height: 100vh;
+            }
+
+            #ui {
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                padding: 1rem 1.25rem;
+                background: rgba(10, 10, 12, 0.75);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 0.75rem;
+                max-width: min(360px, 40vw);
+                box-shadow: 0 10px 35px rgba(0, 0, 0, 0.3);
+                pointer-events: auto;
+            }
+
+            #ui h1 {
+                margin: 0 0 0.35rem;
+                font-size: 1.25rem;
+                letter-spacing: 0.03em;
+            }
+
+            #ui p {
+                margin: 0 0 0.75rem;
+                font-size: 0.85rem;
+                line-height: 1.45;
+                color: rgba(245, 245, 245, 0.82);
+            }
+
+            #controls {
+                display: grid;
+                gap: 0.65rem;
+            }
+
+            .control {
+                display: grid;
+                gap: 0.35rem;
+            }
+
+            .control label {
+                font-size: 0.74rem;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                color: rgba(255, 255, 255, 0.78);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .control input[type="range"],
+            .control select {
+                width: 100%;
+                accent-color: #6fd3ff;
+                padding: 0.3rem;
+                border-radius: 0.5rem;
+                border: 1px solid rgba(255, 255, 255, 0.16);
+                background: rgba(6, 8, 12, 0.82);
+                color: inherit;
+                font: inherit;
+            }
+
+            .control input[type="checkbox"] {
+                margin-right: 0.5rem;
+            }
+
+            #cameraButton {
+                width: 100%;
+                padding: 0.6rem 0.75rem;
+                font-size: 0.9rem;
+                font-weight: 600;
+                border-radius: 0.65rem;
+                border: none;
+                cursor: pointer;
+                background: linear-gradient(135deg, #2e74ff, #46e3ff);
+                color: #050505;
+                transition:
+                    transform 120ms ease,
+                    box-shadow 120ms ease;
+            }
+
+            #cameraButton:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 12px 24px rgba(70, 227, 255, 0.25);
+            }
+
+            #status {
+                font-size: 0.75rem;
+                color: rgba(255, 255, 255, 0.6);
+                margin-top: 0.4rem;
+            }
+
+            #hiddenVideo {
+                display: none;
+            }
+
+            #debugToggle {
+                margin-top: 1rem;
+            }
+
+            #debugButton {
+                width: 100%;
+                padding: 0.55rem 0.75rem;
+                font-size: 0.85rem;
+                font-weight: 600;
+                border-radius: 0.65rem;
+                border: 1px solid rgba(111, 211, 255, 0.35);
+                cursor: pointer;
+                background: rgba(18, 26, 42, 0.65);
+                color: #e6f4ff;
+                transition:
+                    border-color 120ms ease,
+                    background 120ms ease;
+            }
+
+            #debugButton:hover {
+                border-color: rgba(111, 211, 255, 0.8);
+                background: rgba(18, 26, 42, 0.9);
+            }
+
+            #debugPanel {
+                position: fixed;
+                top: 6vh;
+                right: 3vw;
+                width: min(420px, 85vw);
+                max-height: 80vh;
+                background: rgba(9, 12, 20, 0.82);
+                border: 1px solid rgba(111, 211, 255, 0.35);
+                border-radius: 1rem;
+                padding: 1.25rem;
+                display: none;
+                flex-direction: column;
+                gap: 1rem;
+                z-index: 200;
+                backdrop-filter: blur(12px);
+                color: #e6f4ff;
+                overflow-y: auto;
+                box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+            }
+
+            #debugPanel.visible {
+                display: flex;
+            }
+
+            #debugPanel h2 {
+                margin: 0;
+                font-size: 1.4rem;
+                letter-spacing: 0.04em;
+            }
+
+            #debugPanel p {
+                margin: 0;
+                font-size: 0.9rem;
+                line-height: 1.6;
+                color: rgba(230, 244, 255, 0.82);
+                margin-top: -0.3rem;
+            }
+
+            #debugFields {
+                display: grid;
+                gap: 1rem;
+            }
+
+            #debugFields label {
+                font-size: 0.8rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                display: grid;
+                gap: 0.4rem;
+                color: rgba(230, 244, 255, 0.78);
+            }
+
+            #debugFields select,
+            #debugFields textarea {
+                font: inherit;
+                border-radius: 0.6rem;
+                border: 1px solid rgba(111, 211, 255, 0.35);
+                background: rgba(12, 20, 30, 0.85);
+                color: inherit;
+                padding: 0.55rem 0.65rem;
+            }
+
+            #debugFields textarea {
+                min-height: 120px;
+                resize: vertical;
+            }
+
+            #debugNavigation {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            #debugNavigation button {
+                padding: 0.55rem 0.9rem;
+                border-radius: 0.65rem;
+                border: 1px solid rgba(111, 211, 255, 0.45);
+                background: rgba(18, 26, 42, 0.65);
+                color: #e6f4ff;
+                cursor: pointer;
+                font-weight: 600;
+                letter-spacing: 0.02em;
+            }
+
+            #debugNavigation button:hover {
+                background: rgba(18, 26, 42, 0.85);
+                border-color: rgba(111, 211, 255, 0.8);
+            }
+
+            #debugInfo {
+                font-family:
+                    "SFMono-Regular", ui-monospace, "Menlo", "Monaco",
+                    "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", monospace;
+                font-size: 0.8rem;
+                background: rgba(6, 10, 18, 0.75);
+                border-radius: 0.75rem;
+                border: 1px solid rgba(111, 211, 255, 0.25);
+                padding: 1rem;
+                color: rgba(185, 218, 255, 0.88);
+                line-height: 1.55;
+                overflow-x: auto;
+                max-height: 22vh;
+            }
+
+            #debugMeta {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: baseline;
+                gap: 1rem;
+                font-size: 0.85rem;
+                color: rgba(230, 244, 255, 0.8);
+            }
+
+            #debugMeta strong {
+                font-size: 0.9rem;
+            }
+
+            .debug-step-index {
+                font-weight: 600;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                color: rgba(111, 211, 255, 0.9);
+            }
+
+            @media (max-width: 720px) {
+                #ui {
+                    top: auto;
+                    bottom: 1rem;
+                    right: 1rem;
+                    left: auto;
+                    max-width: 85vw;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="scene"></canvas>
+
+        <div id="ui">
+            <h1>Skeleton Projection</h1>
+            <p>
+                Step back, align yourself with the camera, then fine-tune the
+                scale sliders until the projected skeleton matches your
+                real-world height.
+            </p>
+            <p style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.5); margin-top: -0.5rem;">
+                Press <kbd style="padding: 0.1rem 0.3rem; background: rgba(255, 255, 255, 0.1); border-radius: 0.25rem; font-size: 0.7rem;">~</kbd> to toggle this menu
+            </p>
+            <button id="cameraButton">Enable Camera</button>
+            <div id="status">Camera idle</div>
+
+            <div id="controls">
+                <div class="control">
+                    <label for="renderMode"> Skeleton Model </label>
+                    <select id="renderMode">
+                        <option value="asset">Normal Skeleton</option>
+                        <option value="asset-alt" selected>Alternate Skeleton</option>
+                        <option value="none">None</option>
+                    </select>
+                </div>
+
+                <div class="control">
+                    <label for="smoothing">
+                        Landmark Smoothing
+                        <span id="smoothingValue"></span>
+                    </label>
+          <input
+            id="smoothing"
+            type="range"
+            min="0"
+            max="0.95"
+            step="0.05"
+            value="0.9"
+          />
+        </div>
+
+                <div class="control">
+                    <label>
+                        <span>
+                            <input type="checkbox" id="restPose" />
+                            Rest Pose Only
+                        </span>
+                        <span></span>
+                    </label>
+                </div>
+
+                <div class="control">
+                    <label for="scaleX">
+                        Scale X
+                        <span id="scaleXValue"></span>
+                    </label>
+                    <input
+                        id="scaleX"
+                        type="range"
+                        min="0.5"
+                        max="6.0"
+                        step="0.1"
+                        value="3.0"
+                    />
+                </div>
+
+                <div class="control">
+                    <label for="scaleY">
+                        Scale Y
+                        <span id="scaleYValue"></span>
+                    </label>
+                    <input
+                        id="scaleY"
+                        type="range"
+                        min="0.5"
+                        max="6.0"
+                        step="0.1"
+                        value="3.0"
+                    />
+                </div>
+
+                <div class="control">
+                    <label for="scaleZ">
+                        Scale Z
+                        <span id="scaleZValue"></span>
+                    </label>
+                    <input
+                        id="scaleZ"
+                        type="range"
+                        min="0.5"
+                        max="6.0"
+                        step="0.1"
+                        value="3.0"
+                    />
+                </div>
+
+                <div class="control">
+                    <label>
+                        <span>
+                            <input type="checkbox" id="mirror" checked />
+                            Mirror Horizontally
+                        </span>
+                        <span></span>
+                    </label>
+                </div>
+
+                <div class="control">
+                    <label>
+                        <span>
+                            <input type="checkbox" id="showRig" />
+                            Overlay Joint Rig
+                        </span>
+                        <span></span>
+                    </label>
+                </div>
+
+                <div class="control">
+                    <label>
+                        <span>
+                            <input type="checkbox" id="showDebugSpheres" />
+                            Show Limb Origin Spheres
+                        </span>
+                        <span></span>
+                    </label>
+                </div>
+
+                <div class="control">
+                    <label for="boneRotationStrategy"> Bone Rotation Strategy </label>
+                    <select id="boneRotationStrategy">
+                        <option value="unconstrained">Unconstrained</option>
+                        <option value="pole">Three-Joint Pole Vector</option>
+                        <option value="anatomical" selected>Anatomical Plane (default)</option>
+                    </select>
+                </div>
+
+                <div class="control">
+                    <label for="posX">
+                        Position X
+                        <span id="posXValue"></span>
+                    </label>
+                    <input
+                        id="posX"
+                        type="range"
+                        min="-5.0"
+                        max="5.0"
+                        step="0.05"
+                        value="0"
+                    />
+                </div>
+
+                <div class="control">
+                    <label for="posY">
+                        Position Y
+                        <span id="posYValue"></span>
+                    </label>
+          <input
+            id="posY"
+            type="range"
+            min="-5.0"
+            max="5.0"
+            step="0.05"
+            value="3"
+          />
+        </div>
+
+                <div class="control">
+                    <label for="posZ">
+                        Position Z
+                        <span id="posZValue"></span>
+                    </label>
+                    <input
+                        id="posZ"
+                        type="range"
+                        min="-5.0"
+                        max="5.0"
+                        step="0.05"
+                        value="-5"
+                    />
+                </div>
+
+                <div class="control">
+                    <label for="rotX">
+                        Rotation X°
+                        <span id="rotXValue"></span>
+                    </label>
+          <input
+            id="rotX"
+            type="range"
+            min="-360"
+            max="360"
+            step="1"
+            value="0"
+          />
+                </div>
+
+                <div class="control">
+                    <label for="rotY">
+                        Rotation Y°
+                        <span id="rotYValue"></span>
+                    </label>
+                    <input
+                        id="rotY"
+                        type="range"
+                        min="-360"
+                        max="360"
+                        step="1"
+                        value="0"
+                    />
+                </div>
+
+                <div class="control">
+                    <label for="rotZ">
+                        Rotation Z°
+                        <span id="rotZValue"></span>
+                    </label>
+                    <input
+                        id="rotZ"
+                        type="range"
+                        min="-360"
+                        max="360"
+                        step="1"
+                        value="0"
+                    />
+                </div>
+            </div>
+
+            <div id="debugToggle">
+                <button id="debugButton">Open Mesh Debug Helper</button>
+            </div>
+        </div>
+
+        <video id="hiddenVideo" playsinline></video>
+
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+                    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+                }
+            }
+        </script>
+        <script type="module" src="main.js"></script>
+
+        <div id="debugPanel">
+            <div id="debugMeta">
+                <span class="debug-step-index" id="debugStepLabel"></span>
+                <span id="debugSegmentName"></span>
+            </div>
+            <p>
+                Use this helper to verify where each mesh segment should attach.
+                Highlighted geometry shows the current segment. Adjust the
+                fields below and add notes as you inspect the mesh in the scene.
+                When you're done, use
+                <em>Export Answers</em> to copy the collected data into the
+                console.
+            </p>
+            <div id="debugInfo"></div>
+            <div id="debugFields">
+                <label>
+                    Start Landmark
+                    <select id="debugStartSelect"></select>
+                </label>
+                <label>
+                    End Landmark
+                    <select id="debugEndSelect"></select>
+                </label>
+                <label>
+                    Primary Axis Alignment
+                    <select id="debugAxisSelect">
+                        <option value="auto">Auto (detected)</option>
+                        <option value="+x">Positive X</option>
+                        <option value="-x">Negative X</option>
+                        <option value="+y">Positive Y</option>
+                        <option value="-y">Negative Y</option>
+                        <option value="+z">Positive Z</option>
+                        <option value="-z">Negative Z</option>
+                    </select>
+                </label>
+                <label>
+                    Notes
+                    <textarea
+                        id="debugNotes"
+                        placeholder="Describe pivot offsets, rotations, or which joints this mesh should follow."
+                    ></textarea>
+                </label>
+                <label>
+                    <span>
+                        <input type="checkbox" id="debugPreviewApply" />
+                        Apply selections live (preview only)
+                    </span>
+                </label>
+            </div>
+            <div id="debugNavigation">
+                <button id="debugPrev">Previous Segment</button>
+                <button id="debugNext">Next Segment</button>
+                <div style="flex-grow: 1"></div>
+                <button id="debugDump">Export Answers</button>
+                <button id="debugClose">Close</button>
+            </div>
+        </div>
+    </body>
+</html>
